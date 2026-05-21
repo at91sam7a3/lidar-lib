@@ -5,7 +5,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <termios.h>
-#include <chrono>
 #include <thread>
 
 // Header bytes for packet detection
@@ -123,23 +122,20 @@ int LIDARLibrary::ConfigureSerialPort(const std::string& portName) {
 }
 
 void LIDARLibrary::ReadSerialPort() {
-    uint8_t buf[1];
+    uint8_t buf[256];
 
     while (running_) {
         int n = read(serialPort_, buf, sizeof(buf));
         if (n > 0) {
-            AddToBuffer(buf[0]);
-
-            // Process any complete packets in the buffer
+            for (int i = 0; i < n; i++) {
+                AddToBuffer(buf[i]);
+            }
             ProcessBuffer();
         } else if (n < 0) {
             std::cerr << "Error reading from UART: " << strerror(errno) << std::endl;
             running_ = false;
             break;
         }
-
-        // Small delay to prevent busy waiting
-        std::this_thread::sleep_for(std::chrono::microseconds(100));
     }
 }
 
@@ -258,28 +254,24 @@ LidarData LIDARLibrary::ParseData(uint8_t* data, uint16_t size) {
 }
 
 void LIDARLibrary::ProcessBuffer() {
-    // Process packets as long as we have enough data
     while (Available() >= 60) {
-        if (FindHeader()) {
-            // Check if we have a complete 60-byte packet
-            if (Available() >= 60) {
-                uint8_t data[60];
-                uint16_t read_count = ReadFromBuffer(data, 60);
-
-                if (read_count == 60) {
-                    LidarData lidarData = ParseData(data, read_count);
-
-                    // Call callback if one is set
-                    if (callback_) {
-                        callback_(lidarData);
-                    }
-                }
-            }
-            // If we found a header but don't have enough data, wait for more
+        if (!FindHeader()) {
             break;
         }
-        // If we don't find a header, the FindHeader() function already
-        // removes bytes until it finds one or runs out of data
+
+        if (Available() < 60) {
+            break;
+        }
+
+        uint8_t data[60];
+        uint16_t read_count = ReadFromBuffer(data, 60);
+
+        if (read_count == 60) {
+            LidarData lidarData = ParseData(data, read_count);
+            if (callback_) {
+                callback_(lidarData);
+            }
+        }
     }
 }
 
