@@ -222,13 +222,13 @@ LidarData LIDARLibrary::ParseData(uint8_t* data, uint16_t size) {
         double start_angle_deg = start_angle / 64.0;
         double end_angle_deg = end_angle / 64.0;
 
-        double dif = end_angle_deg - start_angle_deg;
+        double dif_deg = end_angle_deg - start_angle_deg;
         if (end_angle_deg < start_angle_deg) {
-            dif = 360.0 - start_angle_deg + end_angle_deg;
+            dif_deg = 360.0 - start_angle_deg + end_angle_deg;
         }
 
-        lidarData.start_angle = start_angle_deg;
-        lidarData.step_size = dif / (data_size - 1);
+        lidarData.start_angle_deg = start_angle_deg;
+        lidarData.step_size_deg = dif_deg / (data_size - 1);
 
         for (int i = 0; i < data_size; i++) {
             uint16_t offset = i * 3;
@@ -236,9 +236,9 @@ LidarData LIDARLibrary::ParseData(uint8_t* data, uint16_t size) {
             uint8_t xdata = data[9 + offset] >> 6;
             uint8_t strength = data[10 + offset];
 
-            double sample_angle = start_angle_deg + (dif / (data_size - 1)) * i;
-            if (sample_angle >= 360.0) {
-                sample_angle -= 360.0;
+            double sample_angle_deg = start_angle_deg + (dif_deg / (data_size - 1)) * i;
+            if (sample_angle_deg >= 360.0) {
+                sample_angle_deg -= 360.0;
             }
 
             lidarData.distances[i] = distance;
