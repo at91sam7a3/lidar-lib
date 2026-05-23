@@ -10,8 +10,8 @@
 // Forward declaration of LidarData struct
 struct LidarData
 {
-    double start_angle;
-    double step_size;
+    double start_angle_deg;
+    double step_size_deg;
     double distances[16];
     double intensities[16];
     uint8_t xdata[16];
